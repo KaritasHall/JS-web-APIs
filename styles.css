@@ -7,6 +7,7 @@ body {
     height: 100vh;
   }
 
+  /* Button to restart game. "Display: none" keeps it hidden until Game Over*/
   #restart-btn {
     font-size: 64px;
     border: solid 2px black;
@@ -24,4 +25,10 @@ body {
 
   #restart-btn.showbutton {
     display: block;
+  }
+
+  #restart-btn:hover {
+    background-color: yellow;
+    cursor: pointer;
+    transition: 300ms;
   }

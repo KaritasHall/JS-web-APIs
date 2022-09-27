@@ -33,12 +33,17 @@ const config = {
   // Preloading all assets
   function preload() {
     this.load.image("sky", "assets/sky.png");
+    this.load.image("bottom", "assets/bottom.png");
     this.load.image("ground", "assets/platform.png");
     this.load.image("star", "assets/star.png");
     this.load.image("bomb", "assets/bomb.png");
-    this.load.spritesheet("dude", "assets/dude.png", {
+    this.load.spritesheet("stars", "assets/star-anim.png", {
       frameWidth: 32,
       frameHeight: 48,
+    });
+    this.load.spritesheet("dude", "assets/dude.png", {
+      frameWidth: 32,
+      frameHeight: 32,
     });
 
     this.load.audio("star-audio", "/sounds/star.wav");
@@ -64,7 +69,7 @@ const config = {
     // Making platforms
     platforms = this.physics.add.staticGroup();
 
-    platforms.create(400, 900, "ground").setScale(8).refreshBody();
+    platforms.create(width * 0.5, height -50, "bottom");
 
     platforms.create(900, 450, "ground");
     platforms.create(1300, 250, "ground");
@@ -74,6 +79,7 @@ const config = {
 
     // Making the player
     player = this.physics.add.sprite(100, 450, "dude");
+    player.setScale(2)
 
     player.setBounce(0.2);
     player.setCollideWorldBounds(true);
@@ -81,33 +87,47 @@ const config = {
 
     this.anims.create({
       key: "left",
-      frames: this.anims.generateFrameNumbers("dude", { start: 0, end: 3 }),
+      frames: this.anims.generateFrameNumbers("dude", { start: 0, end: 7 }),
       frameRate: 10,
       repeat: -1,
     });
 
     this.anims.create({
-      key: "turn",
-      frames: [{ key: "dude", frame: 4 }],
-      frameRate: 20,
+      key: "idle",
+      frames: this.anims.generateFrameNumbers("dude", { start: 8, end: 13 }),
+      frameRate: 8,
+      repeat: -1,
     });
 
     this.anims.create({
       key: "right",
-      frames: this.anims.generateFrameNumbers("dude", { start: 5, end: 8 }),
+      frames: this.anims.generateFrameNumbers("dude", { start: 14, end: 21 }),
       frameRate: 10,
       repeat: -1,
     });
 
+
     // Making stars
+
+    this.anims.create({
+      key: "star-anim",
+      frames: this.anims.generateFrameNumbers("stars", { start: 0, end: 12 }),
+      frameRate: 10,
+      repeat: -1,
+    });
+
+
     stars = this.physics.add.group({
-      key: "star",
+      key: "stars",
       repeat: 13,
       setXY: { x: 120, y: 0, stepX: 120 },
     });
+
+
     // Stars bounce when they drop
     stars.children.iterate(function (child) {
       child.setBounceY(Phaser.Math.FloatBetween(0.4, 0.8));
+      child.anims.play("star-anim", true);
     });
 
     // Setting controls
@@ -162,7 +182,7 @@ const config = {
     } else {
       player.setVelocityX(0);
 
-      player.anims.play("turn");
+      player.anims.play("idle", true);
     }
 
     if (cursors.up.isDown && player.body.touching.down) {
@@ -183,11 +203,7 @@ const config = {
       ? Phaser.Math.Between(400, 800)
       : Phaser.Math.Between(0, 400);
 
-      // We also create a bomb that is released with the star update
-      let bomb = bombs.create(x, 16, "bomb");
-      bomb.setBounce(1);
-      bomb.setCollideWorldBounds(true);
-      bomb.setVelocity(Phaser.Math.Between(-200, 200), 20);
+
 
     // Once all stars are collected we "reset" the stars, getting more stars
     if (stars.countActive(true) === 0) {
@@ -215,7 +231,7 @@ const config = {
     this.physics.pause();
 
     player.setTint(0xff0000);
-    player.anims.play("turn");
+    player.anims.play("idle", true);
 
      // Show game over text
     gameOverText.visible = true;
