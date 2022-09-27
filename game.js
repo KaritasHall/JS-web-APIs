@@ -36,7 +36,7 @@ const config = {
     this.load.image("bottom", "assets/bottom.png");
     this.load.image("ground", "assets/platform.png");
     this.load.image("star", "assets/star.png");
-    this.load.image("bomb", "assets/bomb.png");
+    this.load.image("bomb", "assets/pink-skellon.png");
     this.load.spritesheet("stars", "assets/star-anim.png", {
       frameWidth: 32,
       frameHeight: 48,
