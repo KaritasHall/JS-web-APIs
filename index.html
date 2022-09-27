@@ -39,6 +39,8 @@
       const game = new Phaser.Game(config);
 
       function preload() {
+        this.load.image("clouds-white", "/clouds-white.png");
+        this.load.image("clouds-white-small", "/clouds-white-small.png");
         this.load.image("sky", "assets/sky.png");
         this.load.image("ground", "assets/platform.png");
         this.load.image("star", "assets/star.png");
@@ -47,13 +49,26 @@
           frameWidth: 32,
           frameHeight: 48,
         });
+
+        this.load.audio("star-audio", "/sounds/star.wav");
+        this.load.audio("jump-audio", "/sounds/jump.wav");
+        this.load.audio("update-audio", "/sounds/update.wav");
+        this.load.audio("gameover-audio", "/sounds/gameover.wav");
       }
 
       function create() {
+        // Background
         this.background = this.add.image(width * 0.5, height * 0.5, "sky");
         this.background.displayWidth = width;
         this.background.displayHeight = height;
 
+        // Sound effects
+        this.starAudio = this.sound.add("star-audio");
+        this.jumpAudio = this.sound.add("jump-audio");
+        this.updateAudio = this.sound.add("update-audio");
+        this.gameoverAudio = this.sound.add("gameover-audio");
+
+        // Making platforms
         platforms = this.physics.add.staticGroup();
 
         platforms.create(400, 900, "ground").setScale(8).refreshBody();
@@ -64,6 +79,7 @@
         platforms.create(300, 350, "ground");
         platforms.create(600, 620, "ground");
 
+        // Making the player
         player = this.physics.add.sprite(100, 450, "dude");
 
         player.setBounce(0.2);
@@ -131,8 +147,10 @@
 
         this.physics.add.collider(player, bombs, hitBomb, null, this);
       }
-      // Here we enable the player to move
+
+      // UPDATE
       function update() {
+        // Here we enable the player to move
         if (cursors.left.isDown) {
           player.setVelocityX(-160);
 
@@ -149,11 +167,13 @@
 
         if (cursors.up.isDown && player.body.touching.down) {
           player.setVelocityY(-500);
+          this.jumpAudio.play();
         }
       }
 
-      // Making a function for collecting stars. First off we want the star to disappear once it collides with player
+      // Making a function for collecting stars. Firt we want the star to disappear once it collides with player
       function collectStar(player, star) {
+        this.starAudio.play();
         star.disableBody(true, true);
         // A value of 10 gets added to the "score" variable and scoreText is updated
         score += 10;
@@ -161,16 +181,19 @@
 
         // Once all stars are collected we "reset" the stars, getting more stars
         if (stars.countActive(true) === 0) {
+          this.updateAudio.play();
           stars.children.iterate(function (child) {
             child.enableBody(true, child.x, 0, true, true);
           });
 
-          var x =
+          // This is so the bomb doesn't spawn directly above the player
+          const x =
             player.x < 400
               ? Phaser.Math.Between(400, 800)
               : Phaser.Math.Between(0, 400);
+
           // We also create a bomb that is released with the star update
-          var bomb = bombs.create(x, 16, "bomb");
+          let bomb = bombs.create(x, 16, "bomb");
           bomb.setBounce(1);
           bomb.setCollideWorldBounds(true);
           bomb.setVelocity(Phaser.Math.Between(-200, 200), 20);
@@ -178,6 +201,7 @@
       }
       // When player and bomb collide, the player sprite is paused and gameOver is triggered
       function hitBomb(player, bomb) {
+        this.gameoverAudio.play();
         this.physics.pause();
 
         player.setTint(0xff0000);
