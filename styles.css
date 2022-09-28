@@ -1,7 +1,7 @@
 body {
     margin: 0;
   }
-
+/* Making the game fullscreen. Phaser uses canvas to paint each frame*/
   canvas {
     width: 100vw;
     height: 100vh;

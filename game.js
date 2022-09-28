@@ -1,5 +1,7 @@
 
-
+/* Some default settings from Phaser. I wanted my game to
+    be fullscreen so I dabbled with the width/height.
+    The default version is 400x800*/
 const config = {
     type: Phaser.AUTO,
     width: window.innerWidth * window.devicePixelRatio,
@@ -11,6 +13,9 @@ const config = {
         debug: false,
       },
     },
+    /* Phaser bases a game on these three main functions:
+      preload, create and update. The game is built on this
+      structure as you will see below*/
     scene: {
       preload: preload,
       create: create,
@@ -18,31 +23,38 @@ const config = {
     },
   };
 
+  // Variables
   let player;
   let platforms;
   let cursors;
-  let bombs;
+  let skulls;
   let score = 0;
   let scoreText;
+  let dead = false;
+  let hasPlayedDeathAnimation = false;
 
   const width = window.innerWidth * window.devicePixelRatio;
   const height = window.innerHeight * window.devicePixelRatio;
 
   const game = new Phaser.Game(config);
 
-  // Preloading all assets
+  // PRELOAD - Preloading all assets
   function preload() {
     this.load.image("sky", "assets/sky.png");
     this.load.image("bottom", "assets/bottom.png");
     this.load.image("ground", "assets/platform.png");
     this.load.image("star", "assets/star.png");
-    this.load.image("bomb", "assets/pink-skellon.png");
+    this.load.image("skull", "assets/pink-skellon.png");
     this.load.spritesheet("stars", "assets/star-anim.png", {
       frameWidth: 32,
       frameHeight: 48,
     });
     this.load.spritesheet("dude", "assets/dude.png", {
       frameWidth: 32,
+      frameHeight: 32,
+    });
+    this.load.spritesheet("death", "assets/death.png", {
+      frameWidth: 48,
       frameHeight: 32,
     });
 
@@ -52,7 +64,7 @@ const config = {
     this.load.audio("gameover-audio", "/sounds/gameover.wav");
   }
 
-  // Creating the objects we will use
+  // CREATE - Creating the objects that will be used (using preloaded assets)
   function create() {
 
     // Background
@@ -66,7 +78,9 @@ const config = {
     this.updateAudio = this.sound.add("update-audio");
     this.gameoverAudio = this.sound.add("gameover-audio");
 
-    // Making platforms
+    /* Making platforms. The "Group" method creates a group that stores a
+      collection of similar objects. I'll be using it throughout for objects that come in multiples.
+      Here the statc prefix means that this group will stay in place, no crazy physics.*/
     platforms = this.physics.add.staticGroup();
 
     platforms.create(width * 0.5, height -50, "bottom");
@@ -85,6 +99,10 @@ const config = {
     player.setCollideWorldBounds(true);
     player.body.setGravityY(300);
 
+    /* Now we animate the player by using the frames from the sprite sheet.
+    Phaser treats the sprite sheet like an array - starting from 0. It kind of works
+    like a flipping pages really fast - it loops through the frames creating
+    an effect of movement*/
     this.anims.create({
       key: "left",
       frames: this.anims.generateFrameNumbers("dude", { start: 0, end: 7 }),
@@ -106,9 +124,22 @@ const config = {
       repeat: -1,
     });
 
+    this.anims.create({
+      key: "die",
+      frames: this.anims.generateFrameNumbers("death", { start: 0, end: 5 }),
+      frameRate: 10,
+    });
+
 
     // Making stars
+     // Placing how many stars, where and how much spacing between them
+     stars = this.physics.add.group({
+      key: "stars",
+      repeat: 13,
+      setXY: { x: 120, y: 0, stepX: 120 },
+    });
 
+    // Animating stars
     this.anims.create({
       key: "star-anim",
       frames: this.anims.generateFrameNumbers("stars", { start: 0, end: 12 }),
@@ -116,15 +147,7 @@ const config = {
       repeat: -1,
     });
 
-
-    stars = this.physics.add.group({
-      key: "stars",
-      repeat: 13,
-      setXY: { x: 120, y: 0, stepX: 120 },
-    });
-
-
-    // Stars bounce when they drop
+    // Stars bounce when they drop and run animation
     stars.children.iterate(function (child) {
       child.setBounceY(Phaser.Math.FloatBetween(0.4, 0.8));
       child.anims.play("star-anim", true);
@@ -156,53 +179,55 @@ const config = {
     });
     gameOverText.setOrigin(0.5, 0.5);
 
-    // Making Game Over invisible until gameOver is true
+    // Making "Game Over" text invisible until gameOver is true
     gameOverText.visible = false;
 
-    // Bombs!
-    bombs = this.physics.add.group();
+    // Evil skulls
+    skulls = this.physics.add.group();
 
-    this.physics.add.collider(bombs, platforms);
+    this.physics.add.collider(skulls, platforms);
 
-    this.physics.add.collider(player, bombs, hitBomb, null, this);
+    this.physics.add.collider(player, skulls, hitSkull, null, this);
   }
 
   // UPDATE - the game loop
   function update() {
 
-    // Here we enable the player to move
-    if (cursors.left.isDown) {
+    /* Here we enable the player to move with keyboard arrows, and put to use the animations set up
+    in the previous section. We also have to check if our player is dead. If player is not dead
+      it can move left, right etc. If player IS dead the death animation sequence will run*/
+    if (!dead && cursors.left.isDown) {
       player.setVelocityX(-160);
-
       player.anims.play("left", true);
-    } else if (cursors.right.isDown) {
+
+    } else if (!dead && cursors.right.isDown) {
       player.setVelocityX(160);
-
       player.anims.play("right", true);
-    } else {
-      player.setVelocityX(0);
 
+    } else if (!dead) {
+      player.setVelocityX(0);
       player.anims.play("idle", true);
+
+    } else if (!hasPlayedDeathAnimation) {
+      hasPlayedDeathAnimation = true;
+      player.setVelocityX(0);
+      player.anims.play("die", true);
     }
 
-    if (cursors.up.isDown && player.body.touching.down) {
+    if (!dead && cursors.up.isDown && player.body.touching.down) {
       player.setVelocityY(-500);
       this.jumpAudio.play();
     }
   }
 
-  // Making a function for collecting stars. Firt we want the star to disappear once it collides with player
+  /* Making a function for collecting stars. We want the star to disappear once it collides with player
+    and for the star audio to play.*/
   function collectStar(player, star) {
     this.starAudio.play();
     star.disableBody(true, true);
     // A value of 10 gets added to the "score" variable and scoreText is updated
     score += 10;
     scoreText.setText("Score: " + score);
-    const x =
-    player.x < 400
-      ? Phaser.Math.Between(400, 800)
-      : Phaser.Math.Between(0, 400);
-
 
 
     // Once all stars are collected we "reset" the stars, getting more stars
@@ -212,38 +237,46 @@ const config = {
         child.enableBody(true, child.x, 0, true, true);
       });
 
-      // This is so the bomb doesn't spawn directly above the player
+      // This is so the skull doesn't spawn directly above the player
       const x =
         player.x < 400
           ? Phaser.Math.Between(400, 800)
           : Phaser.Math.Between(0, 400);
 
-      // We also create a bomb that is released with the star update
-      let bomb = bombs.create(x, 16, "bomb");
-      bomb.setBounce(1);
-      bomb.setCollideWorldBounds(true);
-      bomb.setVelocity(Phaser.Math.Between(-200, 200), 20);
+      // We also create a new skull everytime the star update runs
+      let skull = skulls.create(x, 16, "skull");
+      skull.setBounce(1);
+      skull.setCollideWorldBounds(true);
+      skull.setVelocity(Phaser.Math.Between(-200, 200), 20);
     }
   }
-  // When player and bomb collide, the player sprite is paused and gameOver is triggered
-  function hitBomb(player, bomb) {
-    this.gameoverAudio.play();
-    this.physics.pause();
+  /* When player and skull collide, death animation/audio will run and gameOver is triggered.
+    The "if" statement is a guarantee that the death event will only run once. Because once the "dead" variable becomes true
+    it cannot become false again (in my coding scenario).
+    Before when I was testing the game, the skull would sometimes bounce a few times against the
+    player when caught at a weird angle -  that would cause the game over event to fire several times */
+  function hitSkull(player) {
+   if (!dead) {
+      dead = true;
+      this.gameoverAudio.play();
 
-    player.setTint(0xff0000);
-    player.anims.play("idle", true);
+     player.setTint(0xff0000);
 
-     // Show game over text
-    gameOverText.visible = true;
+      // Show game over text
+      gameOverText.visible = true;
 
-    // Restart button
-    const element = document.getElementById("restart-btn");
-    element.classList.add('showbutton');
+     // Restart button
+      const element = document.getElementById("restart-btn");
+      element.classList.add('showbutton');
 
-    gameOver = true;
-
+      gameOver = true;
+    }
   }
-   // Restart game
+   /* Restart game. This function is tied to
+      the restart button in the html. I found that the simplest solution for restarting was
+      to just refresh the browser. You probably could reset everything in the update loop
+      but I didn't see a point as the game is not taking any info into the new game. Also
+      I am lazy.*/
    function restartGame() {
     window.location.reload()
    }
