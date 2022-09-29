@@ -33,9 +33,13 @@ const config = {
   let dead = false;
   let hasPlayedDeathAnimation = false;
 
+  /* Defining screen width/ height as variables so I can use them to style the assets*/
   const width = window.innerWidth * window.devicePixelRatio;
   const height = window.innerHeight * window.devicePixelRatio;
 
+  /* This line runs the entire game. The Phaser.Game instance is the main controller for the entire Phaser game.
+    It sets up all the Phaser systems behind the scenes.
+    Once that is complete it will start the Scene Manager and then begin the main game loop.*/
   const game = new Phaser.Game(config);
 
   // PRELOAD - Preloading all assets
@@ -222,7 +226,7 @@ const config = {
 
   /* Making a function for collecting stars. We want the star to disappear once it collides with player
     and for the star audio to play.*/
-  function collectStar(player, star) {
+    function collectStar(player, star) {
     this.starAudio.play();
     star.disableBody(true, true);
     // A value of 10 gets added to the "score" variable and scoreText is updated
@@ -275,8 +279,7 @@ const config = {
    /* Restart game. This function is tied to
       the restart button in the html. I found that the simplest solution for restarting was
       to just refresh the browser. You probably could reset everything in the update loop
-      but I didn't see a point as the game is not taking any info into the new game. Also
-      I am lazy.*/
+      but I didn't see a point.*/
    function restartGame() {
     window.location.reload()
    }
