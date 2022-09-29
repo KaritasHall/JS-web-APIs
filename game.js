@@ -1,11 +1,25 @@
 
+/* Defining screen width/ height as variables so I can use them to style the assets*/
+let width = window.innerWidth * window.devicePixelRatio;
+let height = window.innerHeight * window.devicePixelRatio;
+
+// Here I am trying to making sure this works properly on giant screens
+// Could not test this properly IRL ¯\_(ツ)_/¯ hope it works!
+if (width > 1920) {
+  width = 1920;
+}
+
+if (height > 929) {
+  height = 929;
+}
+
 /* Some default settings from Phaser. I wanted my game to
     be fullscreen so I dabbled with the width/height.
     The default version is 400x800*/
 const config = {
     type: Phaser.AUTO,
-    width: window.innerWidth * window.devicePixelRatio,
-    height: window.innerHeight * window.devicePixelRatio,
+    width: width,
+    height: height,
     physics: {
       default: "arcade",
       arcade: {
@@ -33,9 +47,6 @@ const config = {
   let dead = false;
   let hasPlayedDeathAnimation = false;
 
-  /* Defining screen width/ height as variables so I can use them to style the assets*/
-  const width = window.innerWidth * window.devicePixelRatio;
-  const height = window.innerHeight * window.devicePixelRatio;
 
   /* This line runs the entire game. The Phaser.Game instance is the main controller for the entire Phaser game.
     It sets up all the Phaser systems behind the scenes.
